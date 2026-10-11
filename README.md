@@ -18,3 +18,6 @@ Codex用のキー設定とCloudflareの本番Secret設定は別。
 音楽はWebAudio合成。記録とお気に入りはlocalStorage保存。端末間同期なし。非表示になると一時停止。
 公開APIは同一オリジンチェック、IP単位のメモリ内簡易レート制限、文章長制限あり。分散・永続レート制限と有料利用の認証は未実装。ElevenLabs側の利用上限も設定してください。実音声はSecret設定後に確認。
 写真: Unsplash。デザイン参考: Calm、Balance。Spotify本文は取得不可。瞑想文章は独自執筆。
+
+## UI
+Opal Brand Kit (https://brandkit.opal.so/) の黒白配色・文字階層を参考に更新。NAGI固有のロゴを保持。SF Proはシステムフォントとして使用し、非Apple端末はシステムsans-serifにフォールバック。
