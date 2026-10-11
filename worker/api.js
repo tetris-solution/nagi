@@ -17,7 +17,7 @@ async function elevenLabsError(response){
  let code='unknown';try{const data=await response.json();const candidate=data.detail?.status||data.detail?.code||data.error?.code;if(typeof candidate==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(candidate))code=candidate}catch{}
  let message='音声を生成できませんでした。別の声を選ぶか、少し時間をおいてお試しください。';
  if(['quota_exceeded','insufficient_credits','insufficient_credit_balance'].includes(code))message='ElevenLabsの利用枠が不足しています。クレジット残高を確認してください。';
- else if(['paid_plan_required','subscription_required','voice_not_allowed','only_for_creator_subscription','payment_required'].includes(code)||response.status===402)message='この声はElevenLabsの有料プランが必要です。「サラ — やさしい語り」または端末の声を選んでください。';
+ else if(['paid_plan_required','subscription_required','voice_not_allowed','only_for_creator_subscription','payment_required'].includes(code)||response.status===402)message='この声はElevenLabsの有料プランが必要です。「サラ — やさしい語り」を選んでください。';
  else if(response.status===401)message='ElevenLabsのAPIキーを確認してください。キーが無効か、利用期限が切れています。';
  else if(response.status===403)message='この声を利用できません。APIキーの読み上げ権限、声の利用条件、プランを確認してください。';
  else if(response.status===429)message='ElevenLabsの利用上限に達しています。少し時間をおいてお試しください。';
@@ -41,8 +41,9 @@ export async function api(request,env){
   try{
    if(provider==='elevenlabs'){
     if(!env.ELEVENLABS_API_KEY)return json({error:'ElevenLabsは未接続です。'},503);
+    const model=body.model??'eleven_v3',speed=body.speed??1;if(!['eleven_v3','eleven_multilingual_v2'].includes(model)||typeof speed!=='number'||speed<.85||speed>1.1)return json({error:'音声モデルと速度を確認してください。'},400);
     if(!/^[a-zA-Z0-9_-]{8,80}$/.test(voice))return json({error:'声の指定が正しくありません。'},400);
-    const r=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(voice),{method:'POST',headers:{'xi-api-key':env.ELEVENLABS_API_KEY,'Content-Type':'application/json','Accept':'audio/mpeg'},body:JSON.stringify({text,model_id:'eleven_multilingual_v2',voice_settings:{stability:.75,similarity_boost:.75,speed:.9}}),signal:AbortSignal.timeout(40000)});
+    const r=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(voice),{method:'POST',headers:{'xi-api-key':env.ELEVENLABS_API_KEY,'Content-Type':'application/json','Accept':'audio/mpeg'},body:JSON.stringify({text,model_id:model,...(model==='eleven_v3'?{language_code:'ja'}:{}),voice_settings:{stability:.5,similarity_boost:.75,speed}}),signal:AbortSignal.timeout(40000)});
     if(!r.ok)return elevenLabsError(r);return new Response(r.body,{headers:{'Content-Type':'audio/mpeg','Cache-Control':'no-store'}});
    }
    if(provider==='google'){
