@@ -1,3 +1,15 @@
+const japaneseVoices={
+'PmgfHCGeS5b7sH90BOOJ':{name:'ふみ',description:'日本語 · 落ち着いた女性の声'},
+'WQz3clzUdMqvBf0jswZQ':{name:'しずか',description:'日本語 · 自然でやわらかな声'},
+'NQZUZmZFxoCYFGj4gD2o':{name:'あいこ',description:'日本語の声'},
+'my3P6caXGLzHy2BLxEdS':{name:'くみ',description:'日本語 · やわらかな声'},
+'GxhGYQesaQaYKePCZDEC':{name:'さくら',description:'日本語 · 女性の声'},
+'RBnMinrYKeccY3vaUxlZ':{name:'鈴木さくら',description:'日本語の声'},
+'DOL4zlUH4vnnX1hByxsw':{name:'あきら',description:'日本語 · 男性の声'},
+'8kgj5469z1URcH4MB2G4':{name:'さくや',description:'日本語 · かわいらしいアニメ風の声'},
+'8EkOjt4xTPGMclNlh1pk':{name:'もりおき',description:'日本語の声'}
+};
+function localizeJapaneseVoices(list){return list.filter(v=>japaneseVoices[v.voice_id]||['ja','ja-jp','japanese','日本語'].includes(String(v.labels?.language||'').toLowerCase())).sort((a,b)=>{const ids=Object.keys(japaneseVoices);return (ids.indexOf(a.voice_id)<0?99:ids.indexOf(a.voice_id))-(ids.indexOf(b.voice_id)<0?99:ids.indexOf(b.voice_id))}).map((v,i)=>({voice_id:v.voice_id,...(japaneseVoices[v.voice_id]||{name:'日本語の声 '+(i+1),description:'日本語の声'})})).slice(0,60)}
 const rates=new Map();
 const json=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
 export async function api(request,env){
@@ -5,7 +17,7 @@ export async function api(request,env){
  if(path==='/api/status'&&request.method==='GET')return json({elevenlabs:!!env.ELEVENLABS_API_KEY,google:!!env.GOOGLE_TTS_API_KEY});
  if(path==='/api/voices'&&request.method==='GET'){
   if(!env.ELEVENLABS_API_KEY)return json({voices:[]});
-  try{const r=await fetch('https://api.elevenlabs.io/v1/voices',{headers:{'xi-api-key':env.ELEVENLABS_API_KEY},signal:AbortSignal.timeout(15000)});if(!r.ok)return json({error:'音声一覧を取得できませんでした。'},502);const d=await r.json();return json({voices:(d.voices||[]).map(v=>({voice_id:v.voice_id,name:v.name})).slice(0,60)})}catch{return json({error:'音声サービスに接続できませんでした。'},502)}
+  try{const r=await fetch('https://api.elevenlabs.io/v1/voices',{headers:{'xi-api-key':env.ELEVENLABS_API_KEY},signal:AbortSignal.timeout(15000)});if(!r.ok)return json({error:'音声一覧を取得できませんでした。'},502);const d=await r.json();return json({voices:localizeJapaneseVoices(d.voices||[])})}catch{return json({error:'音声サービスに接続できませんでした。'},502)}
  }
  if(path==='/api/speech'){
   if(request.method!=='POST')return json({error:'POSTを使用してください。'},405);
