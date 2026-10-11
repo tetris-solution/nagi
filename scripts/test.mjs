@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import worker from '../worker/index.js';
 const request=(path,opts={})=>worker.fetch(new Request('https://nagi.test'+path,opts),{});
 let r=await request('/');assert.equal(r.status,200);assert.match(await r.text(),/今日に、ありがとう/);
-for(const p of ['/app.js','/assets/lake.jpg','/assets/forest.jpg','/assets/night.jpg','/assets/sunrise.jpg']){r=await request(p);assert.equal(r.status,200);assert.ok((await r.arrayBuffer()).byteLength>1000)}
+for(const p of ['/app.js']){r=await request(p);assert.equal(r.status,200);assert.ok((await r.arrayBuffer()).byteLength>1000)}
 r=await request('/api/status');assert.deepEqual(await r.json(),{elevenlabs:false,google:false});
 r=await request('/api/voices');assert.deepEqual(await r.json(),{voices:[]});
 const post=(body,headers={})=>request('/api/speech',{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
@@ -11,7 +11,7 @@ assert.equal((await post({text:'',provider:'google',voice:'ja-JP-Neural2-B'})).s
 assert.equal((await post({text:'あ'.repeat(1600),provider:'google',voice:'ja-JP-Neural2-B'})).status,400);
 assert.equal((await post({text:'ありがとう',provider:'google',voice:'ja-JP-Neural2-B'},{Origin:'https://other.test'})).status,403);
 assert.equal((await request('/api/speech')).status,405);
-const originalFetch=globalThis.fetch;let sent;
+const originalFetch=globalThis.fetch;let sent;globalThis.fetch=async(url)=>new Response(new Uint8Array(2000),{headers:{'Content-Type':'image/jpeg'}});for(const p of ['/assets/lake.jpg','/assets/forest.jpg','/assets/night.jpg','/assets/sunrise.jpg']){const image=await request(p);assert.equal(image.status,200);assert.equal((await image.arrayBuffer()).byteLength,2000)};
 globalThis.fetch=async(url,options)=>{sent={url,options};return new Response(JSON.stringify({audioContent:btoa('audio')}),{headers:{'Content-Type':'application/json'}})};
 r=await worker.fetch(new Request('https://nagi.test/api/speech',{method:'POST',body:JSON.stringify({text:'ありがとう',provider:'google',voice:'ja-JP-Neural2-B'})}),{GOOGLE_TTS_API_KEY:'test-only'});assert.equal(r.status,200);assert.equal(await r.text(),'audio');assert.equal(sent.url,'https://texttospeech.googleapis.com/v1/text:synthesize');assert.equal(JSON.parse(sent.options.body).voice.name,'ja-JP-Neural2-B');assert.equal(sent.options.headers['x-goog-api-key'],'test-only');
 globalThis.fetch=async(url,options)=>{sent={url,options};return new Response('audio',{headers:{'Content-Type':'audio/mpeg'}})};
