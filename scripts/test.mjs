@@ -1,7 +1,7 @@
-import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import worker from '../worker/index.js';
+import assert from 'node:assert/strict';import vm from 'node:vm';import {readFile} from 'node:fs/promises';import worker from '../worker/index.js';
 const request=(path,opts={})=>worker.fetch(new Request('https://nagi.test'+path,opts),{});
 let r=await request('/');assert.equal(r.status,200);assert.match(await r.text(),/今日に、ありがとう/);
-for(const p of ['/app.js']){r=await request(p);assert.equal(r.status,200);assert.ok((await r.arrayBuffer()).byteLength>1000)}
+for(const p of ['/app.js','/timing.js']){r=await request(p);assert.equal(r.status,200);assert.ok((await r.arrayBuffer()).byteLength>1000)}
 r=await request('/api/status');assert.deepEqual(await r.json(),{elevenlabs:false,google:false});
 r=await request('/api/voices');assert.deepEqual(await r.json(),{voices:[]});
 const post=(body,headers={})=>request('/api/speech',{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
@@ -24,3 +24,7 @@ r=await worker.fetch(new Request('https://nagi.test/api/voices'),{ELEVENLABS_API
 globalThis.fetch=async()=>new Response(JSON.stringify({detail:{status:'payment_required'}}),{status:402});r=await worker.fetch(new Request('https://nagi.test/api/speech',{method:'POST',body:JSON.stringify({text:'ひと呼吸',provider:'elevenlabs',voice:'PmgfHCGeS5b7sH90BOOJ'})}),{ELEVENLABS_API_KEY:'test-only'});const paid=await r.json();assert.equal(paid.provider_code,'payment_required');assert.match(paid.error,/サラ/);globalThis.fetch=originalFetch;
 assert.equal((await request('/missing')).status,404);
 console.log('Passed: page/assets, provider readiness, input/origin/method validation, mocked Google & ElevenLabs speech contracts.');
+
+const timing=vm.createContext({});vm.runInContext(await readFile(new URL('../timing.js',import.meta.url),'utf8'),timing);
+for(const [text,expected] of [['普通のガイドです。',1.5],['深呼吸を3回しましょう。',30],['深呼吸を３回しましょう。',30],['三回、深呼吸をしましょう。',30],['深呼吸をさん回しましょう。',30],['30秒間、静かに待ちます。',30],['2分間、呼吸を続けましょう。',120]]){assert.equal(vm.runInContext(`practicePause(${JSON.stringify(text)})`,timing),expected)}
+assert.equal(vm.runInContext(`practicePause('深呼吸を3回しましょう。',2)`,timing),30);const planned=vm.runInContext(`planSession({id:'test',minutes:15,cues:[[0,'短い言葉。'],[90,'深呼吸を3回しましょう。'],[180,'終わります。']]})`,timing);assert.ok(planned.cues[1][0]<10);assert.equal(planned.holds[1],30);assert.ok(planned.duration<90);console.log('Passed: compact timing, explicit breath counts, timed instructions and duration estimates.');
