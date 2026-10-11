@@ -12,6 +12,17 @@ const japaneseVoices={
 function localizeJapaneseVoices(list){return list.filter(v=>japaneseVoices[v.voice_id]||['ja','ja-jp','japanese','日本語'].includes(String(v.labels?.language||'').toLowerCase())).sort((a,b)=>{const ids=Object.keys(japaneseVoices);return (ids.indexOf(a.voice_id)<0?99:ids.indexOf(a.voice_id))-(ids.indexOf(b.voice_id)<0?99:ids.indexOf(b.voice_id))}).map((v,i)=>({voice_id:v.voice_id,...(japaneseVoices[v.voice_id]||{name:'日本語の声 '+(i+1),description:'日本語の声'})})).slice(0,60)}
 const rates=new Map();
 const json=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
+async function elevenLabsError(response){
+ let code='unknown';try{const data=await response.json();const candidate=data.detail?.status||data.detail?.code||data.error?.code;if(typeof candidate==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(candidate))code=candidate}catch{}
+ let message='音声を生成できませんでした。別の声を選ぶか、少し時間をおいてお試しください。';
+ if(['quota_exceeded','insufficient_credits','insufficient_credit_balance'].includes(code))message='ElevenLabsの利用枠が不足しています。クレジット残高を確認してください。';
+ else if(['paid_plan_required','subscription_required','voice_not_allowed','only_for_creator_subscription','payment_required'].includes(code)||response.status===402)message='この声のAPI利用には、ElevenLabsの有料プランが必要です。利用可能な声を選んでください。';
+ else if(response.status===401)message='ElevenLabsのAPIキーを確認してください。キーが無効か、利用期限が切れています。';
+ else if(response.status===403)message='この声を利用できません。APIキーの読み上げ権限、声の利用条件、プランを確認してください。';
+ else if(response.status===429)message='ElevenLabsの利用上限に達しています。少し時間をおいてお試しください。';
+ else if(response.status===404)message='この声が見つかりません。声の一覧を更新して選び直してください。';
+ return json({error:message,provider_code:code,provider_status:response.status},response.status===429?429:502)
+}
 export async function api(request,env){
  const path=new URL(request.url).pathname;
  if(path==='/api/status'&&request.method==='GET')return json({elevenlabs:!!env.ELEVENLABS_API_KEY,google:!!env.GOOGLE_TTS_API_KEY});
@@ -31,7 +42,7 @@ export async function api(request,env){
     if(!env.ELEVENLABS_API_KEY)return json({error:'ElevenLabsは未接続です。'},503);
     if(!/^[a-zA-Z0-9_-]{8,80}$/.test(voice))return json({error:'声の指定が正しくありません。'},400);
     const r=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(voice),{method:'POST',headers:{'xi-api-key':env.ELEVENLABS_API_KEY,'Content-Type':'application/json','Accept':'audio/mpeg'},body:JSON.stringify({text,model_id:'eleven_multilingual_v2',voice_settings:{stability:.75,similarity_boost:.75,speed:.8}}),signal:AbortSignal.timeout(40000)});
-    if(!r.ok)return json({error:'ElevenLabsで音声を生成できませんでした。'},502);return new Response(r.body,{headers:{'Content-Type':'audio/mpeg','Cache-Control':'no-store'}});
+    if(!r.ok)return elevenLabsError(r);return new Response(r.body,{headers:{'Content-Type':'audio/mpeg','Cache-Control':'no-store'}});
    }
    if(provider==='google'){
     if(!env.GOOGLE_TTS_API_KEY)return json({error:'Google TTSは未接続です。'},503);
