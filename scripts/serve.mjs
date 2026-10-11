@@ -1,0 +1,3 @@
+import http from 'node:http';import worker from '../worker/index.js';
+const env={ELEVENLABS_API_KEY:process.env.ELEVENLABS_API_KEY,GOOGLE_TTS_API_KEY:process.env.GOOGLE_TTS_API_KEY};
+http.createServer(async(req,res)=>{try{const chunks=[];for await(const c of req)chunks.push(c);const r=await worker.fetch(new Request('http://localhost:3000'+req.url,{method:req.method,headers:req.headers,...(!['GET','HEAD'].includes(req.method)?{body:Buffer.concat(chunks)}:{})}),env);res.writeHead(r.status,Object.fromEntries(r.headers));res.end(Buffer.from(await r.arrayBuffer()))}catch{res.writeHead(500);res.end('Server error')}}).listen(3000,'0.0.0.0',()=>console.log('Local: http://localhost:3000'));
