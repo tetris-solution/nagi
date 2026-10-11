@@ -42,7 +42,7 @@ export async function api(request,env){
    if(provider==='elevenlabs'){
     if(!env.ELEVENLABS_API_KEY)return json({error:'ElevenLabsは未接続です。'},503);
     if(!/^[a-zA-Z0-9_-]{8,80}$/.test(voice))return json({error:'声の指定が正しくありません。'},400);
-    const r=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(voice),{method:'POST',headers:{'xi-api-key':env.ELEVENLABS_API_KEY,'Content-Type':'application/json','Accept':'audio/mpeg'},body:JSON.stringify({text:text.replaceAll('おつかれ','お疲れ'),model_id:'eleven_multilingual_v2',apply_language_text_normalization:true,voice_settings:{stability:.75,similarity_boost:.75,speed:.9}}),signal:AbortSignal.timeout(40000)});
+    const r=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+encodeURIComponent(voice),{method:'POST',headers:{'xi-api-key':env.ELEVENLABS_API_KEY,'Content-Type':'application/json','Accept':'audio/mpeg'},body:JSON.stringify({text:text.replaceAll('おつかれ','お疲れ'),model_id:'eleven_multilingual_v2',voice_settings:{stability:.75,similarity_boost:.75,speed:.9}}),signal:AbortSignal.timeout(40000)});
     if(!r.ok)return elevenLabsError(r);return new Response(r.body,{headers:{'Content-Type':'audio/mpeg','Cache-Control':'no-store'}});
    }
    if(provider==='google'){
