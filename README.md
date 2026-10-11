@@ -21,3 +21,5 @@ Codex用のキー設定とCloudflareの本番Secret設定は別。
 
 ## UI
 Opal Brand Kit (https://brandkit.opal.so/) の黒白配色・文字階層を参考に更新。NAGI固有のロゴを保持。SF Proはシステムフォントとして使用し、非Apple端末はシステムsans-serifにフォールバック。
+
+背景音にシンギングボウル（20秒間隔）とおりん（26秒間隔）を追加。非整数倍の部分音とうなりを持つWebAudio合成音で、実物の録音ではありません。音量・試聴・停止・切替に対応。
