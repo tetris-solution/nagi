@@ -1,5 +1,6 @@
 const japaneseVoices={
-'PmgfHCGeS5b7sH90BOOJ':{name:'ふみ',description:'日本語 · 落ち着いた女性の声'},
+'EXAVITQu4vr4xnSDxMaL':{name:'サラ — やさしい語り',description:'日本語読み上げ対応 · 標準の多言語音声'},
+'PmgfHCGeS5b7sH90BOOJ':{name:'ふみ',description:'日本語 · 落ち着いた女性の声 · 有料プランが必要'},
 'WQz3clzUdMqvBf0jswZQ':{name:'しずか',description:'日本語 · 自然でやわらかな声'},
 'NQZUZmZFxoCYFGj4gD2o':{name:'あいこ',description:'日本語の声'},
 'my3P6caXGLzHy2BLxEdS':{name:'くみ',description:'日本語 · やわらかな声'},
@@ -16,7 +17,7 @@ async function elevenLabsError(response){
  let code='unknown';try{const data=await response.json();const candidate=data.detail?.status||data.detail?.code||data.error?.code;if(typeof candidate==='string'&&/^[a-zA-Z0-9_-]{1,80}$/.test(candidate))code=candidate}catch{}
  let message='音声を生成できませんでした。別の声を選ぶか、少し時間をおいてお試しください。';
  if(['quota_exceeded','insufficient_credits','insufficient_credit_balance'].includes(code))message='ElevenLabsの利用枠が不足しています。クレジット残高を確認してください。';
- else if(['paid_plan_required','subscription_required','voice_not_allowed','only_for_creator_subscription','payment_required'].includes(code)||response.status===402)message='この声のAPI利用には、ElevenLabsの有料プランが必要です。利用可能な声を選んでください。';
+ else if(['paid_plan_required','subscription_required','voice_not_allowed','only_for_creator_subscription','payment_required'].includes(code)||response.status===402)message='この声はElevenLabsの有料プランが必要です。「サラ — やさしい語り」または端末の声を選んでください。';
  else if(response.status===401)message='ElevenLabsのAPIキーを確認してください。キーが無効か、利用期限が切れています。';
  else if(response.status===403)message='この声を利用できません。APIキーの読み上げ権限、声の利用条件、プランを確認してください。';
  else if(response.status===429)message='ElevenLabsの利用上限に達しています。少し時間をおいてお試しください。';
